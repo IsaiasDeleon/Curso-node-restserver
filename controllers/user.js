@@ -1,48 +1,74 @@
 
 const { response } = require('express');
+const bcriptjs = require('bcryptjs');
+const Usuario = require('../models/usuario');
 
-const userGet = ( req, res = response)=>{
+const userGet = async(req, res = response) => {
+    const { limite = 5, desde = 0 } = req.query
+    const query = { estado : true};
+    
+    const [total, usuarios] = await Promise.all([
+        Usuario.countDocuments(query),
+        Usuario.find(query)
+        .skip(Number(desde))
+        .limit(Number(limite))
+    ])
 
-    const {q, nombre = "no name", api, page = 1, limit} = req.query
-    res.json({
-        msg:'get API -Controlador',
-        q,
-        nombre,
-        api,
-        page,
-        limit
-    })
+    res.json({ total,usuarios })
 }
 
-const userPut =( req, res) => {
-    const id = req.params.id;
+const userPut = async (req, res) => {
+    const { id } = req.params;
+    const { _id, password, google, correo, ...resto } = req.body;
+    // validar contra la DB
+    if (password) {
+        // hash contraseña
+        const salt = bcriptjs.genSaltSync();
+        resto.password = bcriptjs.hashSync(password, salt)
+    }
+    const usuario = await Usuario.findByIdAndUpdate(id, resto, { new: true })
     res.json({
-        msg:"put API -Controlador",
+        //msg:"put API -Controlador",
         id
     });
 }
-const userPost =( req, res) => {
-    const {name, edad} = req.body;
-
-    res.json({
-        msg:"post API -Controlador",
-        name,
-        edad
-    });
-}
-const userDelete =( req, res) => {
-    res.json({
-        msg:"delete API -Controlador"
-    });
-}
-const userPatch =( req, res) => {
-    res.json({
-        msg:"patch API -Controlador"
-    });
-}
+const userPost = async (req, res) => {
+    const { nombre, correo, password, rol } = req.body;
+    const usuario = new Usuario({ nombre, correo, password, rol });
 
 
-module.exports={
+    // hash contraseña
+    const salt = bcriptjs.genSaltSync();
+    usuario.password = bcriptjs.hashSync(password, salt)
+    //Guardar DB
+
+
+    await usuario.save();
+    res.json({
+        //msg:"post API -Controlador",
+        usuario
+
+    });
+}
+const userDelete = async(req, res) => {
+
+    const { id } = req.params;
+    //Eliminar de la db
+    //const usuario= await Usuario.findByIdAndDelete(id);
+    const usuario = await Usuario.findOneAndUpdate(id,{estado:false},{new:true})
+    
+    res.json({
+        usuario
+    });
+}
+const userPatch = (req, res) => {
+    res.json({
+        msg: "patch API -Controlador"
+    });
+}
+
+
+module.exports = {
     userGet,
     userPut,
     userPost,
