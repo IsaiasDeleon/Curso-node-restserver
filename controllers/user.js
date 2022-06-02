@@ -51,14 +51,15 @@ const userPost = async (req, res) => {
     });
 }
 const userDelete = async(req, res) => {
-
+    
     const { id } = req.params;
     //Eliminar de la db
     //const usuario= await Usuario.findByIdAndDelete(id);
     const usuario = await Usuario.findOneAndUpdate(id,{estado:false},{new:true})
-    
+
     res.json({
-        usuario
+        usuario,
+        
     });
 }
 const userPatch = (req, res) => {
